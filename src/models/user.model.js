@@ -1,5 +1,5 @@
 import mongoose, {Schema} from "mongoose"
-import { JsonWebTokenError } from "jsonwebtoken"  //crytohraphy
+import jwt from "jsonwebtoken"  //crytohraphy
 import bcrypt from "bcryptjs"  //for passwords
 
 const userSchema = new Schema(
@@ -50,7 +50,7 @@ const userSchema = new Schema(
     userSchema.pre("save", async function (next) {
         if(!this.isModified("password")) return next();
 
-        this.password = bcrypt.hash(this.password, 10)
+        this.password = await bcrypt.hash(this.password, 10)
         next()
     })
 
@@ -84,4 +84,4 @@ userSchema.methods.generateRefrehToken = function(){
     )
 }
 
-export const User = mongoose.Schema.model("User", userSchema) 
+export const User = mongoose.model("User", userSchema) 
