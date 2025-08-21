@@ -16,7 +16,7 @@ const userSchema = new Schema(
             type: String,
             required: true,
             unique: true,
-            lowecase: true,
+            lowecase : true,
             trim: true,
         },
         fullName:{
@@ -59,21 +59,21 @@ userSchema.methods.isPasswordCorrect = async function(password){
 }
 
 userSchema.methods.generateAccessToken = function(){
-    return JsonWebTokenError.sign(
+    return jwt.sign(
         {
             _id: this._id,
             email: this.email,
             username: this.username,
-            fullname: this.fullname   //payload name: from database
+            fullname: this.fullName   //payload name: from database
         },
-        process.env.ACESS_TOKEN_SECRET,
+        process.env.ACCESS_TOKEN_SECRET,
         {
             expiresIn: process.env.ACCESS_TOKEN_EXPIRY
         }
     )
 }
-userSchema.methods.generateRefrehToken = function(){
-     return JsonWebTokenError.sign(
+userSchema.methods.generateRefreshToken = function(){
+     return jwt.sign(
         {
             _id: this._id,
         },
