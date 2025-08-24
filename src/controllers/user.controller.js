@@ -26,7 +26,6 @@ const generateAccessAndRefreshTokens = async(userId) =>
     }
 
 
-
 const registerUser = asyncHandler( async (req, res) =>{
     
     //console.log('DEBUG req.body:', req.body);
@@ -109,7 +108,6 @@ const registerUser = asyncHandler( async (req, res) =>{
 })
 
 
-
 const loginUser = asyncHandler(async (req, res) => {
     // req body-bring data
     // userName or email
@@ -172,7 +170,6 @@ return res
 });
 
 
-
 const logoutUser = asyncHandler(async(req,res) => {
     //get user id from req.user
     //find the user from db
@@ -205,11 +202,11 @@ const logoutUser = asyncHandler(async(req,res) => {
 })
 
 
-//when user sends request with refresh token then it hsould hit some end point on API so this code
+const refreshAccessToken = asyncHandler(async(req, res) => {
+    //when user sends request with refresh token then it hsould hit some end point on API so this code
 //access through cookies
 //we get refresh token from cookies? or not check
 //verify incoming token
-const refreshAccessToken = asyncHandler(async(req, res) => {
     const incomingRefreshToken = req.cookies.refreshToken || req.body?.refreshToken //mobileapplication
 
     if(!incomingRefreshToken) {
@@ -260,11 +257,149 @@ const refreshAccessToken = asyncHandler(async(req, res) => {
 })
 
 
+const changeCurrentPassword = asyncHandler(async(refreshAccessToken, res) => {
+    //get user id from req.body
+    //get old password and new password from req.body
+    //validate both passwords
+    //find the user from db
+    //match the old password
+    //hash the new password
+    //save it to db
+    //send response
+    const { oldPassword, newPassword, /*confPassword*/ } = req.body
+
+
+    // if(newPassword !== confPassword) {
+    //     throw new ApiError(400, "New password and confirm password do not match")
+    // }
+
+    const user = await User.findById(req.user?._id)
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+
+    if(!isPasswordCorrect) {
+        throw new ApiError(400, "old ")
+    }
+
+    user.password = newPassword
+    await user.save({validateBeforeSave: false})
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password changed successfully"))
+
+})
+
+
+const getCurrentUser = asyncHandler(async(req,res) => {
+    return res
+    .status(200)
+    .json(200, req.user, "current user fetched successfully")
+})
+
+
+const updateAccountDetails = asyncHandler(async(req,res) => {
+    const{ fullName, username, email } = req.body
+
+    if(!fullName || !username ||!email) {
+        throw new ApiError(400,"All fields are required")
+    }
+
+    const user = User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                fullName,
+                username,
+                email,
+            }
+        },
+        {new: true}   //info after update is returned
+    
+    ).select("-password")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User details updated successfully"))
+
+
+
+})
+
+
+
+
+const updateAvatar = asyncHandler(async(req, res) => {
+    const avatarLocalPath = req.files.path
+    if(!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is missing")
+    }
+
+        const avatar = await uploadOnCloudinary(avatarLocalPath)
+
+        if(!avatar.url) {
+            throw new ApiError(400, "Avatar file is missing")
+
+        }
+
+        await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                $set: {
+                    avatar: avatar.url
+                }
+            },
+            {new:true}
+        ).select("-password")
+    
+
+})
+
+
+const updateCoverImage = asyncHandler(async(req, res) => {
+    const coverImageLocalPath = req.files.path
+    if(!coverImageLocalPath) {
+        throw new ApiError(400, "Cover Image file is missing")
+    }
+
+        const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+
+        if(!coverImage.url) {
+            throw new ApiError(400, "Cover Image file is missing")
+        }
+
+        await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                $set: {
+                    coverImage: coverImage.url
+                }
+            },
+            {new: true}
+        ).select("-password")
+
+        return res.status(200)
+        .json(
+            new ApiResponse(200, User , "Cover Image updated successfully"))
+    
+
+})
+
+
+
+
+
+
+
 
 
 export { 
     registerUser,
     loginUser,
     logoutUser,
-    refreshAccessToken
+    refreshAccessToken,
+    changeCurrentPassword,
+    getCurrentUser,
+    updateAccountDetails,
+    updateAvatar,
+    updateCoverImage
 }
